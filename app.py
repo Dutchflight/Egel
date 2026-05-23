@@ -18,69 +18,37 @@ jobs_lock = threading.Lock()
 
 
 def run_ffmpeg(job_id: str, input_path: Path, output_path: Path, original_name: str):
-    """Run FFmpeg and track progress via duration + time."""
     with jobs_lock:
         jobs[job_id]["status"] = "converting"
-        jobs[job_id]["progress"] = 0
+        jobs[job_id]["progress"] = 50
 
     try:
-        # First, get duration
-        probe = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-             "-of", "default=noprint_wrappers=1:nokey=1", str(input_path)],
-            capture_output=True, text=True
-        )
-        duration = float(probe.stdout.strip()) if probe.stdout.strip() else 0
-
-        # Run FFmpeg with progress output
-        cmd = [
-            "ffmpeg", "-y",
-            "-i", str(input_path),
-            "-c:v", "libx264",
-            "-c:a", "aac",
-            "-movflags", "+faststart",
-            "-progress", "pipe:1",
-            "-nostats",
-            str(output_path)
-        ]
-
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        result = subprocess.run(
+            ["ffmpeg", "-y",
+             "-i", str(input_path),
+             "-c:v", "libx264",
+             "-c:a", "aac",
+             "-movflags", "+faststart",
+             str(output_path)],
+            capture_output=True,
             text=True,
-            bufsize=1
+            timeout=600
         )
 
-        for line in process.stdout:
-            line = line.strip()
-            if line.startswith("out_time_ms="):
-                try:
-                    ms = int(line.split("=")[1])
-                    current_time = ms / 1_000_000
-                    if duration > 0:
-                        progress = min(int((current_time / duration) * 100), 99)
-                        with jobs_lock:
-                            jobs[job_id]["progress"] = progress
-                except (ValueError, IndexError):
-                    pass
-
-        process.wait()
-
-        if process.returncode == 0 and output_path.exists():
+        if result.returncode == 0 and output_path.exists():
             with jobs_lock:
                 jobs[job_id]["status"] = "done"
                 jobs[job_id]["progress"] = 100
                 jobs[job_id]["output"] = output_path.name
         else:
-            stderr_output = ""
-            try:
-                stderr_output = process.stderr.read()[-500:]
-            except Exception:
-                pass
+            error_msg = result.stderr[-500:] if result.stderr else "FFmpeg fout"
             with jobs_lock:
                 jobs[job_id]["status"] = "error"
-                jobs[job_id]["error"] = stderr_output or "FFmpeg fout"
+                jobs[job_id]["error"] = error_msg
+    except subprocess.TimeoutExpired:
+        with jobs_lock:
+            jobs[job_id]["status"] = "error"
+            jobs[job_id]["error"] = "Conversie duurde te lang (timeout)"
     except Exception as e:
         with jobs_lock:
             jobs[job_id]["status"] = "error"
