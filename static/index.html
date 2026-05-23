@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Egel video omzetter</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 36px;
+      font-size: 0.95rem;
+    }
+
+    #drop-zone {
+      width: 100%;
+      max-width: 600px;
+      border: 2px dashed #334155;
+      border-radius: 16px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #1e2330;
+    }
+
+    #drop-zone.drag-over {
+      border-color: #6366f1;
+      background: #1e1f3b;
+    }
+
+    #drop-zone svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    #drop-zone p {
+      font-size: 1rem;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+
+    #drop-zone span {
+      font-size: 0.85rem;
+      color: #475569;
+    }
+
+    .btn {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+
+    #file-input { display: none; }
+
+    #jobs-container {
+      width: 100%;
+      max-width: 600px;
+      margin-top: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .job-card {
+      background: #1e2330;
+      border-radius: 12px;
+      padding: 18px 20px;
+      border: 1px solid #2d3748;
+    }
+
+    .job-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .job-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #cbd5e1;
+      max-width: 70%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .job-status {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-queued    { background: #1e3a5f; color: #60a5fa; }
+    .status-converting { background: #2d1f5e; color: #a78bfa; }
+    .status-done      { background: #14422a; color: #4ade80; }
+    .status-error     { background: #3b1a1a; color: #f87171; }
+
+    .progress-bar-bg {
+      background: #2d3748;
+      border-radius: 99px;
+      height: 8px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #6366f1, #8b5cf6);
+      transition: width 0.4s ease;
+    }
+
+    .job-actions {
+      margin-top: 12px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .download-btn {
+      padding: 7px 18px;
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: white;
+      border: none;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      text-decoration: none;
+    }
+
+    .download-btn:hover { opacity: 0.85; }
+
+    .error-msg {
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: #f87171;
+      background: #1f1212;
+      border-radius: 6px;
+      padding: 8px 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Egel video omzetter</h1>
+  <p class="subtitle">Sleep je bestanden hieronder of klik om te kiezen</p>
+
+  <div id="drop-zone">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+    </svg>
+    <p>Sleep AVI-bestanden hierheen</p>
+    <span>of</span>
+    <br />
+    <button class="btn" onclick="document.getElementById('file-input').click()">Kies bestanden</button>
+    <input type="file" id="file-input" multiple accept=".avi,video/x-msvideo,video/avi" />
+  </div>
+
+  <div id="jobs-container"></div>
+
+  <script>
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const jobsContainer = document.getElementById('jobs-container');
+
+    // Drag & drop events
+    dropZone.addEventListener('dragover', e => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      handleFiles(Array.from(e.dataTransfer.files));
+    });
+
+    fileInput.addEventListener('change', () => {
+      handleFiles(Array.from(fileInput.files));
+      fileInput.value = '';
+    });
+
+    function handleFiles(files) {
+      files.forEach(file => {
+        if (!file.name.toLowerCase().endsWith('.avi')) {
+          alert(`"${file.name}" is geen AVI-bestand.`);
+          return;
+        }
+        uploadFile(file);
+      });
+    }
+
+    async function uploadFile(file) {
+      const cardId = 'job-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      const card = createCard(cardId, file.name, 'queued', 0);
+      jobsContainer.prepend(card);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      let jobId;
+      try {
+        const res = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        jobId = data.job_id;
+      } catch (err) {
+        updateCard(cardId, 'error', 0, null, err.message);
+        return;
+      }
+
+      pollStatus(cardId, jobId);
+    }
+
+    function pollStatus(cardId, jobId) {
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch(`/status/${jobId}`);
+          const data = await res.json();
+
+          updateCard(cardId, data.status, data.progress, data.output, data.error);
+
+          if (data.status === 'done' || data.status === 'error') {
+            clearInterval(interval);
+          }
+        } catch {
+          // silently retry
+        }
+      }, 800);
+    }
+
+    function createCard(id, filename, status, progress) {
+      const div = document.createElement('div');
+      div.className = 'job-card';
+      div.id = id;
+      div.innerHTML = `
+        <div class="job-header">
+          <span class="job-name" title="${escHtml(filename)}">${escHtml(filename)}</span>
+          <span class="job-status status-${status}">${statusLabel(status)}</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" style="width:${progress}%"></div>
+        </div>
+        <div class="job-actions"></div>
+        <div class="error-msg" style="display:none"></div>
+      `;
+      return div;
+    }
+
+    function updateCard(id, status, progress, outputFile, errorMsg) {
+      const card = document.getElementById(id);
+      if (!card) return;
+
+      card.querySelector('.job-status').className = `job-status status-${status}`;
+      card.querySelector('.job-status').textContent = statusLabel(status);
+      card.querySelector('.progress-bar-fill').style.width = `${progress}%`;
+
+      const actions = card.querySelector('.job-actions');
+      const errorEl = card.querySelector('.error-msg');
+
+      if (status === 'done' && outputFile) {
+        if (!actions.querySelector('a')) {
+          const a = document.createElement('a');
+          a.href = `/download/${encodeURIComponent(outputFile)}`;
+          a.className = 'download-btn';
+          a.textContent = '⬇ Download MP4';
+          a.download = outputFile;
+          actions.appendChild(a);
+        }
+      }
+
+      if (status === 'error' && errorMsg) {
+        errorEl.style.display = 'block';
+        errorEl.textContent = errorMsg;
+      }
+    }
+
+    function statusLabel(s) {
+      return { queued: 'In wachtrij', converting: 'Converteren…', done: 'Klaar', error: 'Fout' }[s] || s;
+    }
+
+    function escHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>
