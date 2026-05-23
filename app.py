@@ -7,8 +7,8 @@ from flask import Flask, request, jsonify, send_file
 
 app = Flask(__name__, static_folder="static", template_folder="static")
 
-UPLOAD_DIR = Path("uploads")
-OUTPUT_DIR = Path("outputs")
+UPLOAD_DIR = Path("/tmp/uploads")
+OUTPUT_DIR = Path("/tmp/outputs")
 UPLOAD_DIR.mkdir(exist_ok=True)
 OUTPUT_DIR.mkdir(exist_ok=True)
 
